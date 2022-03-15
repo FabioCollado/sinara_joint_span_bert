@@ -1,0 +1,54 @@
+Added encoding parameter to BaseInputReader, JsonInputReader and JsonPredictionInputReader. This is included in open parameter before json.load.
+
+config files were changed a lot
+
+In trainer.py:
+from:
+run_key = str(datetime.datetime.now()).replace(' ', '_')
+to:
+run_key = str(datetime.datetime.now()).replace(' ', '_').replace(':', '_')
+
+
+In input_reader.py
+Changed defaul values:
+class BaseInputReader(ABC):
+    def __init__(self, types_path: str, tokenizer: BertTokenizer, neg_entity_count: int = 100,
+                 neg_rel_count: int = 100, max_span_size: int = 10, logger: Logger = None, encoding = 'utf-8',
+                 **kwargs):
+
+
+
+In spert_trainer.py
+Changed from:
+model = model_class.from_pretrained(self._args.model_path,
+                                            config=config,
+                                            # SpERT model parameters
+                                            cls_token=self._tokenizer.convert_tokens_to_ids('[CLS]'),
+                                            relation_types=input_reader.relation_type_count - 1,
+                                            entity_types=input_reader.entity_type_count,
+                                            max_pairs=self._args.max_pairs,
+                                            prop_drop=self._args.prop_drop,
+                                            size_embedding=self._args.size_embedding,
+                                            freeze_transformer=self._args.freeze_transformer,
+                                            cache_dir=self._args.cache_path)
+to:
+if os.path.isfile('./data/last_model_trained/final_model/config.json'):
+            model_path = './data/last_model_trained/final_model'
+        else:
+            model_path = self._args.model_path
+        model = model_class.from_pretrained(model_path,
+                                            config=config,
+                                            # SpERT model parameters
+                                            cls_token=self._tokenizer.convert_tokens_to_ids('[CLS]'),
+                                            relation_types=input_reader.relation_type_count - 1,
+                                            entity_types=input_reader.entity_type_count,
+                                            max_pairs=self._args.max_pairs,
+                                            prop_drop=self._args.prop_drop,
+                                            size_embedding=self._args.size_embedding,
+                                            freeze_transformer=self._args.freeze_transformer,
+                                            cache_dir=self._args.cache_path)
+
+2 - included:
+        self._save_model('./data/last_model_trained', model, self._tokenizer, global_iteration,
+                         optimizer=optimizer if self._args.save_optimizer else None, extra=extra,
+                         include_iteration=False, name='final_model')
